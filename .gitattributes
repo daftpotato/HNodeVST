@@ -1,0 +1,10 @@
+# Batch files must keep CRLF line endings - cmd.exe misbehaves on bare LF,
+# and the build scripts rely on CRLF for correct parsing.
+*.bat text eol=crlf
+
+# C/C++ sources and text files: normalise to LF in the repo, CRLF in the
+# working tree on Windows.
+* text=auto
+*.cpp text
+*.h   text
+*.md  text
