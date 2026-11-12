@@ -28,11 +28,21 @@ enum
     idChkAutoMask, idChkInvertMask, idCmbUniverses, idCmbFps,
     idChkArtNet, idEdArtNetPort, idChkArtNetOut, idEdArtNetOutPort, idEdArtNetAddr, idEdArtNetSendHost,
     idChkOsc, idEdOscPort, idChkOscOut, idEdOscOutPort, idEdOscSendHost,
-    idChkSpout, idEdSpoutName, idEdMaskedChannels,
+    idChkSpout, idEdSpoutName, idEdMaskedChannels, idCmbFixture, idEdFixtureStart, idBtnAddFixture,
     idChkMidi, idChkMidiCc, idChkMidiNotes, idEdMidiStart, idEdMidiCcOffset,
     idGenBase
 };
 
+static const char* kFixtureNames[] = {
+    "Disco Ball (1ch)", "Flasher (1ch)", "Blinder (5ch)", "Blinder (13ch)",
+    "Bar Light (5ch)", "Bar Light (13ch)", "Par Light (5ch)", "Par Light (13ch)",
+    "Moving Spot (13ch)", "Moving Wash (13ch)", "Laser (13ch)", "6x4 Light (5ch)",
+    "Multi Dimmer (15ch)"
+};
+static const int kFixtureChannels[] = {
+    1, 1, 5, 13, 5, 13, 5, 13, 13, 13, 13, 5, 15
+};
+static const int kFixtureCount = 13;
 static int GenId(int slot, int which) { return idGenBase + slot * 16 + which; }
 
 // ---------------------------------------------------------------------------
@@ -333,6 +343,26 @@ void PlugView::BuildControls()
         y += 30;
     }
 
+    // ---- fixtures (VRSL fixture definitions) ----
+    MkLabel(hwnd, "FIXTURES (VRSL definitions)", x, y, fullW, 18, fontSmall); y += 20;
+    cmbFixture = MkCombo(hwnd, x, y, fullW - 80, 200);
+    SendMessageA(cmbFixture, WM_SETFONT, (WPARAM)fontSmall, TRUE);
+    for (int i = 0; i < kFixtureCount; ++i)
+        SendMessageA(cmbFixture, CB_ADDSTRING, 0, (LPARAM)kFixtureNames[i]);
+    SendMessageA(cmbFixture, CB_SETCURSEL, 0, 0);
+    SetWindowLongPtr(cmbFixture, GWLP_ID, (LONG_PTR)idCmbFixture);
+    btnAddFixture = CreateWindowExA(0, "BUTTON", "Add",
+                                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                                    x + fullW - 72, y, 72, 22, hwnd, nullptr, nullptr, nullptr);
+    SendMessageA(btnAddFixture, WM_SETFONT, (WPARAM)fontSmall, TRUE);
+    SetWindowLongPtr(btnAddFixture, GWLP_ID, (LONG_PTR)idBtnAddFixture);
+    y += 26;
+    MkLabel(hwnd, "Start DMX Channel", x, y, fullW, 16, fontSmall); y += 18;
+    edFixtureStart = MkEdit(hwnd, "0", x, y, halfW, 22);
+    SendMessageA(edFixtureStart, WM_SETFONT, (WPARAM)fontSmall, TRUE);
+    SetWindowLongPtr(edFixtureStart, GWLP_ID, (LONG_PTR)idEdFixtureStart);
+    y += 30;
+
     // ---- masked channels (fixture DMX address ranges) ----
     MkLabel(hwnd, "MASKED CHANNELS (fixture addresses, one range per line: start-end)",
             x, y, fullW, 18, fontSmall); y += 20;
@@ -412,7 +442,8 @@ void PlugView::SyncControlsFromEngine()
         std::string txt;
         for (auto& r : c.maskedChannels)
         {
-            txt += std::to_string(r.start) + "-" + std::to_string(r.end) + "\r\n";
+            txt += std::to_string(r.start) + "-" + std::to_string(r.end);
+            txt.push_back((char)13); txt.push_back((char)10);
         }
         SetWindowTextA(edMaskedChannels, txt.c_str());
     }
@@ -725,6 +756,26 @@ LRESULT CALLBACK PlugView::WndProc(HWND h, UINT msg, WPARAM wParam, LPARAM lPara
             }
             if (code == BN_CLICKED)
             {
+                if (id == idBtnAddFixture)
+                {
+                    int sel = (int)SendMessageA(self->cmbFixture, CB_GETCURSEL, 0, 0);
+                    if (sel < 0 || sel >= kFixtureCount) sel = 0;
+                    int ch = kFixtureChannels[sel];
+                    int start = ReadIntEdit(self->edFixtureStart, 0);
+                    int end = start + ch - 1;
+                    char buf[64];
+                    sprintf_s(buf, "%d-%d", start, end);
+                    // append to masked channels edit
+                    char existing[4096] = {0};
+                    GetWindowTextA(self->edMaskedChannels, existing, 4095);
+                    std::string txt = existing;
+                    if (!txt.empty() && txt.back() != (char)10) { txt.push_back((char)13); txt.push_back((char)10); }
+                    txt += buf;
+                    txt.push_back((char)13); txt.push_back((char)10);
+                    SetWindowTextA(self->edMaskedChannels, txt.c_str());
+                    self->PushSettingsToEngine();
+                    return 0;
+                }
                 self->PushSettingsToEngine();
                 return 0;
             }
