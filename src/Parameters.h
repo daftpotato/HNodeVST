@@ -126,7 +126,7 @@ inline double ParamDefault(ParamID id)
         case kGammaCorrection:     return 1;
         case kRgbGridMode:         return 0;
         case kSerializeUniverses:  return 3;
-        case kTargetFps:           return 60;
+        case kTargetFps:           return 30;
         case kAutoMaskOnZero:      return 0;
         case kInvertMask:          return 0;
         case kArtNetEnable:        return 1;

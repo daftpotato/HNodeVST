@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "Processor.h"
 #include "Controller.h"
 #include "base/source/fstreamer.h"
