@@ -54,9 +54,9 @@ tresult PLUGIN_API PlugView::queryInterface(const TUID iid, void** obj)
 {
     if (memcmp(iid, IPlugView::iid, sizeof(TUID)) == 0)
     {
-        *obj = this;
+        *obj = static_cast<IPlugView*>(this);
         addRef();
-        return kResultTrue;
+        return kResultOk;
     }
     return CPluginView::queryInterface(iid, obj);
 }
@@ -93,8 +93,14 @@ tresult PLUGIN_API PlugView::attached(void* parent, FIDString type)
     SyncControlsFromEngine();
 
     // 16 Hz UI refresh.
-    SetTimer(hwnd, 1, 62, nullptr);
+    SetTimer(hwnd, 1, 200, nullptr);
     return kResultTrue;
+}
+
+tresult PLUGIN_API PlugView::isPlatformTypeSupported(FIDString type)
+{
+    if (strcmp(type, kPlatformTypeHWND) == 0) return kResultTrue;
+    return kResultFalse;
 }
 
 tresult PLUGIN_API PlugView::removed()
@@ -121,8 +127,8 @@ tresult PLUGIN_API PlugView::onSize(ViewRect* newSize)
 
 tresult PLUGIN_API PlugView::checkSizeConstraint(ViewRect* rect)
 {
-    rect->right  = rect->left + kMinW;
-    rect->bottom = rect->top + kMinH;
+    if (rect->right - rect->left < kMinW) rect->right = rect->left + kMinW;
+    if (rect->bottom - rect->top < kMinH) rect->bottom = rect->top + kMinH;
     return kResultTrue;
 }
 
@@ -245,7 +251,7 @@ void PlugView::BuildControls()
     SetWindowLongPtr(cmbFps, GWLP_ID, (LONG_PTR)idCmbFps);
     y += 30;
 
-    // ---- network ----
+    // ---- spout ----
     MkLabel(hwnd, "OUTPUTS", x, y, fullW, 18, fontSmall); y += 20;
     chkSpout = MkCheck(hwnd, "Spout2 (to OBS)", x, y, fullW, 18);
     SendMessageA(chkSpout, WM_SETFONT, (WPARAM)fontSmall, TRUE);
@@ -255,48 +261,6 @@ void PlugView::BuildControls()
     edSpoutName = MkTextEdit(hwnd, "HNode VST Output", x, y, fullW, 22);
     SendMessageA(edSpoutName, WM_SETFONT, (WPARAM)fontSmall, TRUE);
     SetWindowLongPtr(edSpoutName, GWLP_ID, (LONG_PTR)idEdSpoutName);
-    y += 28;
-
-    chkArtNet = MkCheck(hwnd, "Art-Net In", x, y, halfW, 18);
-    SendMessageA(chkArtNet, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SetWindowLongPtr(chkArtNet, GWLP_ID, (LONG_PTR)idChkArtNet);
-    chkArtNetOut = MkCheck(hwnd, "Art-Net Out", x + halfW + 10, y, halfW, 18);
-    SendMessageA(chkArtNetOut, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SetWindowLongPtr(chkArtNetOut, GWLP_ID, (LONG_PTR)idChkArtNetOut);
-    y += 20;
-    edArtNetPort     = MkEdit(hwnd, "6454", x, y, halfW, 22);
-    edArtNetOutPort  = MkEdit(hwnd, "6454", x + halfW + 10, y, halfW, 22);
-    SendMessageA(edArtNetPort, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SendMessageA(edArtNetOutPort, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SetWindowLongPtr(edArtNetPort, GWLP_ID, (LONG_PTR)idEdArtNetPort);
-    SetWindowLongPtr(edArtNetOutPort, GWLP_ID, (LONG_PTR)idEdArtNetOutPort);
-    MkLabel(hwnd, "Bind Address (in)", x, y, halfW, 16, fontSmall);
-    MkLabel(hwnd, "Send Host (out)", x + halfW + 10, y, halfW, 16, fontSmall); y += 18;
-    edArtNetAddr = MkTextEdit(hwnd, "0.0.0.0", x, y, halfW, 22);
-    edArtNetSendHost = MkTextEdit(hwnd, "127.0.0.1", x + halfW + 10, y, halfW, 22);
-    SendMessageA(edArtNetAddr, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SendMessageA(edArtNetSendHost, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SetWindowLongPtr(edArtNetAddr, GWLP_ID, (LONG_PTR)idEdArtNetAddr);
-    SetWindowLongPtr(edArtNetSendHost, GWLP_ID, (LONG_PTR)idEdArtNetSendHost);
-    y += 28;
-
-    chkOsc = MkCheck(hwnd, "OSC In", x, y, halfW, 18);
-    SendMessageA(chkOsc, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SetWindowLongPtr(chkOsc, GWLP_ID, (LONG_PTR)idChkOsc);
-    chkOscOut = MkCheck(hwnd, "OSC Out", x + halfW + 10, y, halfW, 18);
-    SendMessageA(chkOscOut, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SetWindowLongPtr(chkOscOut, GWLP_ID, (LONG_PTR)idChkOscOut);
-    y += 20;
-    edOscPort    = MkEdit(hwnd, "12000", x, y, halfW, 22);
-    edOscOutPort = MkEdit(hwnd, "12000", x + halfW + 10, y, halfW, 22);
-    SendMessageA(edOscPort, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SendMessageA(edOscOutPort, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SetWindowLongPtr(edOscPort, GWLP_ID, (LONG_PTR)idEdOscPort);
-    SetWindowLongPtr(edOscOutPort, GWLP_ID, (LONG_PTR)idEdOscOutPort);
-    MkLabel(hwnd, "OSC Send Host", x, y, fullW, 16, fontSmall); y += 18;
-    edOscSendHost = MkTextEdit(hwnd, "127.0.0.1", x, y, fullW, 22);
-    SendMessageA(edOscSendHost, WM_SETFONT, (WPARAM)fontSmall, TRUE);
-    SetWindowLongPtr(edOscSendHost, GWLP_ID, (LONG_PTR)idEdOscSendHost);
     y += 28;
 
     // ---- MIDI ----
@@ -375,10 +339,12 @@ void PlugView::BuildControls()
     edMaskedChannels = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
                                       WS_CHILD | WS_VISIBLE | ES_MULTILINE |
                                       ES_AUTOVSCROLL | WS_VSCROLL,
-                                      x, y, fullW, 90, hwnd, nullptr, nullptr, nullptr);
+                                      x, y, fullW, 60, hwnd, nullptr, nullptr, nullptr);
     SendMessageA(edMaskedChannels, WM_SETFONT, (WPARAM)fontSmall, TRUE);
     SetWindowLongPtr(edMaskedChannels, GWLP_ID, (LONG_PTR)idEdMaskedChannels);
-    y += 96;
+    y += 70;
+    contentH = y;
+    scrollY = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -407,22 +373,11 @@ void PlugView::SyncControlsFromEngine()
     SendMessageA(cmbFps, CB_SETCURSEL, fpsSel, 0);
 
     SendMessageA(chkSpout, BM_SETCHECK, c.spoutEnabled ? BST_CHECKED : BST_UNCHECKED, 0);
-    SendMessageA(chkArtNet, BM_SETCHECK, c.artNetEnabled ? BST_CHECKED : BST_UNCHECKED, 0);
-    SendMessageA(chkArtNetOut, BM_SETCHECK, c.artNetSendEnabled ? BST_CHECKED : BST_UNCHECKED, 0);
-    SendMessageA(chkOsc, BM_SETCHECK, c.oscEnabled ? BST_CHECKED : BST_UNCHECKED, 0);
-    SendMessageA(chkOscOut, BM_SETCHECK, c.oscSendEnabled ? BST_CHECKED : BST_UNCHECKED, 0);
     SendMessageA(chkMidi, BM_SETCHECK, c.midiEnabled ? BST_CHECKED : BST_UNCHECKED, 0);
     SendMessageA(chkMidiCc, BM_SETCHECK, c.midiUseCc ? BST_CHECKED : BST_UNCHECKED, 0);
     SendMessageA(chkMidiNotes, BM_SETCHECK, c.midiUseNotes ? BST_CHECKED : BST_UNCHECKED, 0);
 
     SetWindowTextA(edSpoutName, c.spoutOutputName.c_str());
-    SetWindowTextA(edArtNetPort, std::to_string(c.artNetPort).c_str());
-    SetWindowTextA(edArtNetOutPort, std::to_string(c.artNetSendPort).c_str());
-    SetWindowTextA(edOscPort, std::to_string(c.oscPort).c_str());
-    SetWindowTextA(edOscOutPort, std::to_string(c.oscSendPort).c_str());
-    SetWindowTextA(edArtNetAddr, c.artNetAddress.c_str());
-    SetWindowTextA(edArtNetSendHost, c.artNetSendHost.c_str());
-    SetWindowTextA(edOscSendHost, c.oscSendHost.c_str());
     SetWindowTextA(edMidiStart, std::to_string(c.midiStartChannel).c_str());
     SetWindowTextA(edMidiCcOffset, std::to_string(c.midiCcOffset).c_str());
 
@@ -493,29 +448,18 @@ void PlugView::PushSettingsToEngine()
     }
 
     c.spoutEnabled      = SendMessageA(chkSpout, BM_GETCHECK, 0, 0) == BST_CHECKED;
-    c.artNetEnabled     = SendMessageA(chkArtNet, BM_GETCHECK, 0, 0) == BST_CHECKED;
-    c.artNetSendEnabled = SendMessageA(chkArtNetOut, BM_GETCHECK, 0, 0) == BST_CHECKED;
-    c.oscEnabled        = SendMessageA(chkOsc, BM_GETCHECK, 0, 0) == BST_CHECKED;
-    c.oscSendEnabled    = SendMessageA(chkOscOut, BM_GETCHECK, 0, 0) == BST_CHECKED;
     c.midiEnabled       = SendMessageA(chkMidi, BM_GETCHECK, 0, 0) == BST_CHECKED;
     c.midiUseCc         = SendMessageA(chkMidiCc, BM_GETCHECK, 0, 0) == BST_CHECKED;
     c.midiUseNotes      = SendMessageA(chkMidiNotes, BM_GETCHECK, 0, 0) == BST_CHECKED;
 
     char buf[256];
     GetWindowTextA(edSpoutName, buf, 255); c.spoutOutputName = buf;
-    c.artNetPort     = ReadIntEdit(edArtNetPort, 6454);
-    c.artNetSendPort = ReadIntEdit(edArtNetOutPort, 6454);
-    c.oscPort        = ReadIntEdit(edOscPort, 12000);
-    c.oscSendPort    = ReadIntEdit(edOscOutPort, 12000);
     c.midiStartChannel = ReadIntEdit(edMidiStart, 0);
     c.midiCcOffset     = ReadIntEdit(edMidiCcOffset, 0);
 
-    // host addresses
+    // host addresses (removed)
     {
         char buf[256];
-        GetWindowTextA(edArtNetAddr, buf, 255); if (buf[0]) c.artNetAddress = buf;
-        GetWindowTextA(edArtNetSendHost, buf, 255); if (buf[0]) c.artNetSendHost = buf;
-        GetWindowTextA(edOscSendHost, buf, 255); if (buf[0]) c.oscSendHost = buf;
         GetWindowTextA(edSpoutName, buf, 255); if (buf[0]) c.spoutOutputName = buf;
     }
 
@@ -709,16 +653,18 @@ LRESULT CALLBACK PlugView::WndProc(HWND h, UINT msg, WPARAM wParam, LPARAM lPara
             RECT rc;
             GetClientRect(h, &rc);
 
-            // background
+            HDC memDC = CreateCompatibleDC(dc);
+            HBITMAP memBmp = CreateCompatibleBitmap(dc, rc.right - rc.left, rc.bottom - rc.top);
+            HBITMAP oldBmp = (HBITMAP)SelectObject(memDC, memBmp);
+
             HBRUSH bg = CreateSolidBrush(RGB(26, 26, 30));
-            FillRect(dc, &rc, bg);
+            FillRect(memDC, &rc, bg);
             DeleteObject(bg);
 
             self->LayoutControls();
-            self->DrawPreview(dc, self->previewRect);
-            self->DrawChannelStrip(dc, self->stripRect);
+            self->DrawPreview(memDC, self->previewRect);
+            self->DrawChannelStrip(memDC, self->stripRect);
 
-            // status bar
             RECT sr = { 8, rc.bottom - 26, kPanelX - 12, rc.bottom - 6 };
             Engine* e = Controller::sEngine;
             if (e)
@@ -735,18 +681,25 @@ LRESULT CALLBACK PlugView::WndProc(HWND h, UINT msg, WPARAM wParam, LPARAM lPara
                     s.artNetActive.load() ? "OK" : "off",
                     s.oscActive.load() ? "OK" : "off");
 
-                SelectObject(dc, self->fontSmall);
-                SetBkMode(dc, TRANSPARENT);
-                SetTextColor(dc, s.lastError.empty() ? RGB(150, 200, 150) : RGB(230, 120, 120));
-                TextOutA(dc, sr.left, sr.top, line, (int)strlen(line));
+                SelectObject(memDC, self->fontSmall);
+                SetBkMode(memDC, TRANSPARENT);
+                SetTextColor(memDC, s.lastError.empty() ? RGB(150, 200, 150) : RGB(230, 120, 120));
+                TextOutA(memDC, sr.left, sr.top, line, (int)strlen(line));
 
                 if (!s.lastError.empty())
                 {
-                    SetTextColor(dc, RGB(230, 120, 120));
-                    TextOutA(dc, sr.left, sr.top + 14, s.lastError.c_str(),
+                    SetTextColor(memDC, RGB(230, 120, 120));
+                    TextOutA(memDC, sr.left, sr.top + 14, s.lastError.c_str(),
                              (int)s.lastError.size());
                 }
             }
+
+            BitBlt(dc, 0, 0, rc.right - rc.left, rc.bottom - rc.top, memDC, 0, 0, SRCCOPY);
+
+            SelectObject(memDC, oldBmp);
+            DeleteObject(memBmp);
+            DeleteDC(memDC);
+
             EndPaint(h, &ps);
             return 0;
         }
@@ -778,12 +731,8 @@ LRESULT CALLBACK PlugView::WndProc(HWND h, UINT msg, WPARAM wParam, LPARAM lPara
             if (code == EN_CHANGE)
             {
                 // Text edits apply on Enter/focus-loss to avoid thrashing.
-                if (id == idEdSpoutName || id == idEdArtNetPort ||
-                    id == idEdArtNetOutPort || id == idEdOscPort ||
-                    id == idEdOscOutPort || id == idEdMidiStart ||
-                    id == idEdMidiCcOffset || id == idEdArtNetAddr ||
-                    id == idEdArtNetSendHost || id == idEdOscSendHost ||
-                    id == idEdMaskedChannels)
+                if (id == idEdSpoutName || id == idEdMidiStart ||
+                    id == idEdMidiCcOffset || id == idEdMaskedChannels)
                 {
                     self->PushSettingsToEngine();
                 }
@@ -796,6 +745,29 @@ LRESULT CALLBACK PlugView::WndProc(HWND h, UINT msg, WPARAM wParam, LPARAM lPara
         {
             // Trackbars: apply live.
             self->PushSettingsToEngine();
+            return 0;
+        }
+
+        case WM_MOUSEWHEEL:
+        {
+            RECT rc; GetClientRect(h, &rc);
+            int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+            int step = -delta / WHEEL_DELTA * 60;
+            int maxScroll = self->contentH - (rc.bottom - rc.top); if (maxScroll < 0) maxScroll = 0;
+            int oldScroll = self->scrollY;
+            int _v = self->scrollY + step; if (_v < 0) _v = 0; if (_v > maxScroll) _v = maxScroll; self->scrollY = _v;
+            int moveDelta = oldScroll - self->scrollY; // positive = scroll up = move controls down
+            if (moveDelta != 0)
+            {
+                EnumChildWindows(h, [](HWND child, LPARAM lParam) -> BOOL {
+                    int* d = (int*)lParam;
+                    RECT r; GetWindowRect(child, &r);
+                    MapWindowPoints(HWND_DESKTOP, GetParent(child), (LPPOINT)&r, 2);
+                    MoveWindow(child, r.left, r.top + *d, r.right - r.left, r.bottom - r.top, FALSE);
+                    return TRUE;
+                }, (LPARAM)&moveDelta);
+                InvalidateRect(h, nullptr, FALSE);
+            }
             return 0;
         }
 

@@ -130,22 +130,7 @@ struct ShowConfig
     std::vector<ChannelRange> maskedChannels;
     bool  invertMask = false;
 
-    // network
-    bool        artNetEnabled  = true;
-    int         artNetPort     = 6454;
-    std::string artNetAddress  = "0.0.0.0";
-    bool        artNetSendEnabled = false;
-    std::string artNetSendHost   = "127.0.0.1";
-    int         artNetSendPort   = 6454;
-
-    // OSC (VRSL GridReader listens on 12000, /VRSL prefix)
-    bool        oscEnabled = true;
-    int         oscPort    = 12000;
-    std::string oscPrefix  = "/VRSL";
-    bool        oscSendEnabled = true;
-    std::string oscSendHost    = "127.0.0.1";
-    int         oscSendPort    = 12000;
-
+    // network (removed - DAW-driven only)
     // spout
     bool        spoutEnabled = true;
     std::string spoutOutputName = "HNode VST Output";

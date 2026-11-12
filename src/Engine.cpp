@@ -45,8 +45,6 @@ Engine::Engine()
 
 Engine::~Engine()
 {
-    artNet.Shutdown();
-    osc.Shutdown();
     spout.Shutdown();
 }
 
@@ -80,83 +78,10 @@ void Engine::Reconfigure()
     previewFront = pixelsA.data();
 
     merged.assign(kMaxChannels, 0);
-    lastOscSent.assign(kMaxChannels, 0);
 
-    // Restart network listeners if their settings changed.
-    static int lastArtPort = -1;
-    static std::string lastArtAddr;
-    if (config.artNetEnabled)
-    {
-        if (!artNet.IsReceiverRunning() || lastArtPort != config.artNetPort ||
-            lastArtAddr != config.artNetAddress)
-        {
-            artNet.Shutdown();
-            if (artNet.StartReceiver(config.artNetPort, config.artNetAddress,
-                [this](uint16_t universe, const uint8_t* data, int len)
-                {
-                    std::lock_guard<std::mutex> lk(dmx.mutex);
-                    for (int i = 0; i < len && i < kChannelsPerUni; ++i)
-                        dmx.setChannel(universe, i, data[i]);
-                    dmx.lastRecvMs[universe % kMaxUniverses] = (uint32_t)NowMsU64();
-                }))
-            {
-                stats.artNetActive = true;
-            }
-            else
-            {
-                stats.artNetActive = false;
-                stats.lastError = "Art-Net bind failed on port " +
-                                  std::to_string(config.artNetPort);
-            }
-        }
-        lastArtPort = config.artNetPort;
-        lastArtAddr = config.artNetAddress;
-    }
-    else
-    {
-        artNet.Shutdown();
-        stats.artNetActive = false;
-        lastArtPort = -1;
-    }
-
-    static int lastOscPort = -1;
-    if (config.oscEnabled)
-    {
-        if (!osc.IsReceiverRunning() || lastOscPort != config.oscPort)
-        {
-            osc.Shutdown();
-            osc.StartReceiver(config.oscPort,
-                [this](const std::string& address, const std::vector<int>& ints,
-                       const std::vector<float>&)
-                {
-                    // Accept /VRSL/<n> <value> and /VRSL/Command/RefreshDMX.
-                    if (address == config.oscPrefix + "/Command/RefreshDMX")
-                    {
-                        std::lock_guard<std::mutex> lk(dmx.mutex);
-                        // Snapshot the current state so a refresh has something to send.
-                        return;
-                    }
-                    std::string prefix = config.oscPrefix + "/";
-                    if (address.compare(0, prefix.size(), prefix) != 0) return;
-                    std::string rest = address.substr(prefix.size());
-                    int ch = -1;
-                    try { ch = std::stoi(rest); } catch (...) { return; }
-                    if (ints.empty()) return;
-                    std::lock_guard<std::mutex> lk(dmx.mutex);
-                    int u = ch / kChannelsPerUni;
-                    int c = ch % kChannelsPerUni;
-                    if (u >= 0 && u < kMaxUniverses) dmx.setChannel(u, c, (uint8_t)ints[0]);
-                });
-            stats.oscActive = true;
-        }
-        lastOscPort = config.oscPort;
-    }
-    else
-    {
-        osc.Shutdown();
-        stats.oscActive = false;
-        lastOscPort = -1;
-    }
+    // No network listeners (DAW-driven only).
+    stats.artNetActive = false;
+    stats.oscActive = false;
 
     reconfigurePending = false;
 }
@@ -279,42 +204,6 @@ void Engine::PushOutputs()
     {
         spout.Shutdown();
         stats.spoutActive = false;
-    }
-
-    // ---- Art-Net out ----
-    if (config.artNetSendEnabled)
-    {
-        std::vector<uint8_t> snap;
-        {
-            std::lock_guard<std::mutex> lk(dmx.mutex);
-            snap = merged;
-        }
-        int uniCount = std::min(kMaxUniverses, config.serializeUniverses);
-        for (int u = 0; u < uniCount; ++u)
-            ArtNet::SendUniverse(config.artNetSendHost, config.artNetSendPort,
-                                 (uint16_t)u, snap.data() + u * kChannelsPerUni,
-                                 kChannelsPerUni, artNetSequence);
-        artNetSequence++;
-    }
-
-    // ---- OSC out (VRSL GridReader) ----
-    if (config.oscSendEnabled)
-    {
-        std::vector<uint8_t> snap;
-        {
-            std::lock_guard<std::mutex> lk(dmx.mutex);
-            snap = merged;
-        }
-        // Only send channels that changed, matching HNode's "only send changed" model.
-        int limit = std::min((int)snap.size(), std::min(kMaxChannels,
-                            config.serializeUniverses * kChannelsPerUni));
-        for (int i = 0; i < limit; ++i)
-        {
-            if (i < (int)lastOscSent.size() && snap[i] == lastOscSent[i]) continue;
-            Osc::SendInt(config.oscSendHost, config.oscSendPort,
-                         config.oscPrefix + "/" + std::to_string(i), snap[i]);
-            if (i < (int)lastOscSent.size()) lastOscSent[i] = snap[i];
-        }
     }
 
     // ---- Rolling FPS ----

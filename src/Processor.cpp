@@ -210,10 +210,6 @@ void Processor::SyncConfigFromParams()
     c.autoMaskOnZero      = P(Param::kAutoMaskOnZero)  >= 0.5;
     c.invertMask          = P(Param::kInvertMask)      >= 0.5;
     c.spoutEnabled        = P(Param::kSpoutEnable)     >= 0.5;
-    c.artNetEnabled       = P(Param::kArtNetEnable)    >= 0.5;
-    c.artNetSendEnabled   = P(Param::kArtNetSendEnable) >= 0.5;
-    c.oscEnabled          = P(Param::kOscEnable)       >= 0.5;
-    c.oscSendEnabled      = P(Param::kOscSendEnable)   >= 0.5;
     c.midiEnabled         = P(Param::kMidiEnable)      >= 0.5;
     c.midiUseCc           = P(Param::kMidiUseCc)       >= 0.5;
     c.midiUseNotes        = P(Param::kMidiUseNotes)    >= 0.5;
@@ -222,10 +218,7 @@ void Processor::SyncConfigFromParams()
                                    (int)std::lround(P(Param::kSerializeUniverses))));
     c.targetFps          = std::max(1.0, std::min(240.0, P(Param::kTargetFps)));
 
-    c.artNetPort       = std::max(1, std::min(65535, (int)std::lround(P(Param::kArtNetPort))));
-    c.artNetSendPort   = std::max(1, std::min(65535, (int)std::lround(P(Param::kArtNetSendPort))));
-    c.oscPort          = std::max(1, std::min(65535, (int)std::lround(P(Param::kOscPort))));
-    c.oscSendPort      = std::max(1, std::min(65535, (int)std::lround(P(Param::kOscSendPort))));
+    // artNet/osc removed
     c.midiStartChannel = std::max(0, std::min(4095, (int)std::lround(P(Param::kMidiStartChannel))));
     c.midiCcOffset     = std::max(0, std::min(127, (int)std::lround(P(Param::kMidiCcOffset))));
 
@@ -285,27 +278,10 @@ tresult PLUGIN_API Processor::setState(IBStream* state)
     c.autoMaskOnZero  = autoMask != 0;
     c.invertMask      = invMask != 0;
 
-    // Network block
-    int32 artEn = 1, artSend = 0, oscEn = 1, oscSend = 1, spoutEn = 1, midiEn = 1;
-    int32 artPort = 6454, artSPort = 6454, oscPort = 12000, oscSPort = 12000;
-    streamer.readInt32(artEn);
-    streamer.readInt32(artPort);
-    streamer.readInt32(artSend);
-    streamer.readInt32(artSPort);
-    streamer.readInt32(oscEn);
-    streamer.readInt32(oscPort);
-    streamer.readInt32(oscSend);
-    streamer.readInt32(oscSPort);
+    // Network block (removed)
+    int32 spoutEn = 1, midiEn = 1;
     streamer.readInt32(spoutEn);
     streamer.readInt32(midiEn);
-    c.artNetEnabled     = artEn != 0;
-    c.artNetPort        = artPort;
-    c.artNetSendEnabled = artSend != 0;
-    c.artNetSendPort    = artSPort;
-    c.oscEnabled        = oscEn != 0;
-    c.oscPort           = oscPort;
-    c.oscSendEnabled    = oscSend != 0;
-    c.oscSendPort       = oscSPort;
     c.spoutEnabled      = spoutEn != 0;
     c.midiEnabled       = midiEn != 0;
 
@@ -319,11 +295,7 @@ tresult PLUGIN_API Processor::setState(IBStream* state)
         out.assign(buf.data(), len);
         return true;
     };
-    readStr(c.artNetAddress);
-    readStr(c.artNetSendHost);
     readStr(c.spoutOutputName);
-    readStr(c.oscPrefix);
-    readStr(c.oscSendHost);
 
     // Masks
     int32 maskCount = 0;
@@ -396,14 +368,6 @@ tresult PLUGIN_API Processor::getState(IBStream* state)
     streamer.writeInt32(c.autoMaskOnZero ? 1 : 0);
     streamer.writeInt32(c.invertMask ? 1 : 0);
 
-    streamer.writeInt32(c.artNetEnabled ? 1 : 0);
-    streamer.writeInt32(c.artNetPort);
-    streamer.writeInt32(c.artNetSendEnabled ? 1 : 0);
-    streamer.writeInt32(c.artNetSendPort);
-    streamer.writeInt32(c.oscEnabled ? 1 : 0);
-    streamer.writeInt32(c.oscPort);
-    streamer.writeInt32(c.oscSendEnabled ? 1 : 0);
-    streamer.writeInt32(c.oscSendPort);
     streamer.writeInt32(c.spoutEnabled ? 1 : 0);
     streamer.writeInt32(c.midiEnabled ? 1 : 0);
 
@@ -411,11 +375,7 @@ tresult PLUGIN_API Processor::getState(IBStream* state)
         streamer.writeInt32((int32)s.size());
         if (!s.empty()) streamer.writeRaw(s.data(), (int)s.size());
     };
-    writeStr(c.artNetAddress);
-    writeStr(c.artNetSendHost);
     writeStr(c.spoutOutputName);
-    writeStr(c.oscPrefix);
-    writeStr(c.oscSendHost);
 
     streamer.writeInt32((int32)c.maskedChannels.size());
     for (const auto& r : c.maskedChannels)

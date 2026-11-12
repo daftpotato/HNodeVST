@@ -122,23 +122,7 @@ tresult PLUGIN_API Controller::initialize(FUnknown* context)
     AddNormalized(Param::kInvertMask, "Invert Mask", "",
                    0.0, ParameterInfo::kCanAutomate);
 
-    // ---- network ----
-    AddNormalized(Param::kArtNetEnable, "Art-Net In", "",
-                   1.0, ParameterInfo::kCanAutomate);
-    AddNormalized(Param::kArtNetPort, "Art-Net Port", "",
-                   6454.0, ParameterInfo::kCanAutomate, nullptr, 0, 1.0, 65535.0);
-    AddNormalized(Param::kArtNetSendEnable, "Art-Net Out", "",
-                   0.0, ParameterInfo::kCanAutomate);
-    AddNormalized(Param::kArtNetSendPort, "Art-Net Out Port", "",
-                   6454.0, ParameterInfo::kCanAutomate, nullptr, 0, 1.0, 65535.0);
-    AddNormalized(Param::kOscEnable, "OSC In", "",
-                   1.0, ParameterInfo::kCanAutomate);
-    AddNormalized(Param::kOscPort, "OSC In Port", "",
-                   12000.0, ParameterInfo::kCanAutomate, nullptr, 0, 1.0, 65535.0);
-    AddNormalized(Param::kOscSendEnable, "OSC Out", "",
-                   1.0, ParameterInfo::kCanAutomate);
-    AddNormalized(Param::kOscSendPort, "OSC Out Port", "",
-                   12000.0, ParameterInfo::kCanAutomate, nullptr, 0, 1.0, 65535.0);
+    // ---- network (removed) ----
     AddNormalized(Param::kSpoutEnable, "Spout Output", "",
                    1.0, ParameterInfo::kCanAutomate);
     AddNormalized(Param::kMidiEnable, "MIDI -> DMX", "",

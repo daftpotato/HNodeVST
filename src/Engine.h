@@ -4,8 +4,6 @@
 
 #include "Common.h"
 #include "Serializers.h"
-#include "ArtNet.h"
-#include "Osc.h"
 #include "SpoutOut.h"
 #include "Generators.h"
 
@@ -58,8 +56,6 @@ public:
     std::vector<uint8_t> merged;         // the channel list handed to the serializer
 
     // Network/output objects (used by the processor for teardown).
-    ArtNet      artNet;
-    Osc         osc;
     SpoutSender spout;
     Generators  generators;
     MidiToDmx   midiToDmx;
@@ -83,10 +79,8 @@ private:
 
     std::atomic<bool> reconfigurePending{false};
     std::atomic<uint64_t> lastTickMs{0};
-    uint8_t artNetSequence = 0;
 
     // Cached OSC send state so we only emit changes.
-    std::vector<uint8_t> lastOscSent;
 };
 
 } // namespace HNodeVST

@@ -26,14 +26,7 @@ enum ID : int32_t
     kInvertMask,
 
     // network
-    kArtNetEnable,
-    kArtNetPort,          // 1..65535
-    kArtNetSendEnable,
-    kArtNetSendPort,
-    kOscEnable,
-    kOscPort,
-    kOscSendEnable,
-    kOscSendPort,
+    // (removed)
 
     // spout
     kSpoutEnable,
@@ -85,14 +78,6 @@ inline bool ParamPlainRange(ParamID id, double& minPlain, double& maxPlain)
         case kTargetFps:           return rng(1, 240);
         case kAutoMaskOnZero:      return rng(0, 1);
         case kInvertMask:          return rng(0, 1);
-        case kArtNetEnable:        return rng(0, 1);
-        case kArtNetPort:          return rng(1, 65535);
-        case kArtNetSendEnable:    return rng(0, 1);
-        case kArtNetSendPort:      return rng(1, 65535);
-        case kOscEnable:           return rng(0, 1);
-        case kOscPort:             return rng(1, 65535);
-        case kOscSendEnable:       return rng(0, 1);
-        case kOscSendPort:         return rng(1, 65535);
         case kSpoutEnable:         return rng(0, 1);
         case kMidiEnable:          return rng(0, 1);
         case kMidiStartChannel:    return rng(0, 4095);
@@ -129,14 +114,6 @@ inline double ParamDefault(ParamID id)
         case kTargetFps:           return 15;
         case kAutoMaskOnZero:      return 0;
         case kInvertMask:          return 0;
-        case kArtNetEnable:        return 1;
-        case kArtNetPort:          return 6454;
-        case kArtNetSendEnable:    return 0;
-        case kArtNetSendPort:      return 6454;
-        case kOscEnable:           return 1;
-        case kOscPort:             return 12000;
-        case kOscSendEnable:       return 1;
-        case kOscSendPort:         return 12000;
         case kSpoutEnable:         return 1;
         case kMidiEnable:          return 1;
         case kMidiStartChannel:    return 0;
