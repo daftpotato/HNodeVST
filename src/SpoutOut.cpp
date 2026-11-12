@@ -1,3 +1,4 @@
+#include <chrono>
 #include "SpoutOut.h"
 
 // SpoutLibrary.h pulls in d3d11.h / dxgiformat.h; the Windows SDK include dir comes
@@ -24,6 +25,14 @@ bool SpoutSender::Send(const uint8_t* rgba, int width, int height,
         loaded = true;
     }
 
+    // If a previous CreateSender failed, throttle retries to every 2s.
+    if (!created && createFailed)
+    {
+        using namespace std::chrono;
+        uint64_t now = (uint64_t)duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+        if (now - lastCreateAttempt < 2000) return false;
+    }
+
     // Dimensions or name changed -> rebuild the sender.
     if (created && (width != curW || height != curH || name != senderName))
     {
@@ -35,12 +44,15 @@ bool SpoutSender::Send(const uint8_t* rgba, int width, int height,
 
     if (!created)
     {
+        lastCreateAttempt = (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
         gSpout->SetSenderName(name.c_str());
         if (!gSpout->CreateSender(name.c_str(), (unsigned)width, (unsigned)height))
         {
             lastError = "CreateSender failed";
+            createFailed = true;
             return false;
         }
+        createFailed = false;
         curW = width; curH = height;
         senderName = name;
         created = true;

@@ -122,8 +122,8 @@ struct ShowConfig
     bool           gammaCorrection = true;
     bool           rgbGridMode     = false;
     int            serializeUniverses = 3;
-    int            outputWidth    = 1920;
-    int            outputHeight   = 1080;
+    int            outputWidth    = 1280;
+    int            outputHeight   = 720;
 
     // masking
     bool  autoMaskOnZero = false;

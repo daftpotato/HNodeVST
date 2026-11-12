@@ -31,6 +31,8 @@ public:
 private:
     bool loaded = false;
     bool created = false;
+    bool createFailed = false;
+    uint64_t lastCreateAttempt = 0;
     int  curW = 0, curH = 0;
     std::string senderName;
     std::string lastError;
