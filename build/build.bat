@@ -34,7 +34,7 @@ rem ---- VST3 main ----
 set "S6=%SDK%\public.sdk\source\main\pluginfactory.cpp %SDK%\public.sdk\source\main\dllmain.cpp"
 
 rem ---- plugin ----
-set "S7=%ROOT%\src\HNodeVST.cpp %ROOT%\src\Processor.cpp %ROOT%\src\Controller.cpp %ROOT%\src\Editor.cpp %ROOT%\src\Engine.cpp %ROOT%\src\ArtNet.cpp %ROOT%\src\Osc.cpp %ROOT%\src\SpoutOut.cpp %ROOT%\src\Generators.cpp"
+set "S7=%ROOT%\src\HNodeVST.cpp %ROOT%\src\Processor.cpp %ROOT%\src\Controller.cpp %ROOT%\src\Editor.cpp %ROOT%\src\Engine.cpp %ROOT%\src\ArtNet.cpp %ROOT%\src\Osc.cpp %ROOT%\src\SpoutOut.cpp %ROOT%\src\Generators.cpp %ROOT%\src\SpoutLoader.cpp"
 
 set "ALL=%S1% %S2% %S3% %S4% %S5% %S6% %S7%"
 
@@ -76,7 +76,7 @@ if not exist "%BUNDLE%" mkdir "%BUNDLE%"
 del /q "%OBJ%\_link.rsp" 2>nul
 for %%S in (%ALL%) do echo "%OBJ%\%%~nS.obj" >> "%OBJ%\_link.rsp"
 
-link /nologo /DLL /OUT:"%BUNDLE%\HNodeVST.vst3" /LIBPATH:"%SPOUT%\SpoutLibrary\Binaries" SpoutLibrary.lib kernel32.lib user32.lib gdi32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib ws2_32.lib d3d11.lib dxgi.lib comctl32.lib @%OBJ%\_link.rsp
+link /nologo /DLL /DELAYLOAD:SpoutLibrary.dll /OUT:"%BUNDLE%\HNodeVST.vst3" /LIBPATH:"%SPOUT%\SpoutLibrary\Binaries" SpoutLibrary.lib kernel32.lib user32.lib gdi32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib ws2_32.lib d3d11.lib dxgi.lib comctl32.lib delayimp.lib @%OBJ%\_link.rsp
 if errorlevel 1 (
   echo [FAIL] link
   exit /b 1
