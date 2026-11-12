@@ -38,6 +38,11 @@ enum ID : int32_t
     kMidiUseCc,
     kMidiUseNotes,
 
+    // DAW automation -> DMX channels
+    kAutoBase,            // base DMX channel (0..4095)
+    kAutoCh0, kAutoCh1, kAutoCh2, kAutoCh3, kAutoCh4, kAutoCh5, kAutoCh6, kAutoCh7,
+    kAutoCh8, kAutoCh9, kAutoCh10, kAutoCh11, kAutoCh12, kAutoCh13, kAutoCh14, kAutoCh15,
+
     // generators: 4 slots x 6 params
     kGenType0, kGenRate0, kGenStart0, kGenCount0, kGenMin0, kGenMax0, kGenDuty0,
     kGenType1, kGenRate1, kGenStart1, kGenCount1, kGenMin1, kGenMax1, kGenDuty1,
@@ -84,8 +89,12 @@ inline bool ParamPlainRange(ParamID id, double& minPlain, double& maxPlain)
         case kMidiCcOffset:        return rng(0, 127);
         case kMidiUseCc:           return rng(0, 1);
         case kMidiUseNotes:        return rng(0, 1);
+        case kAutoBase:            return rng(0, 4095);
         default: break;
     }
+
+    for (int i = 0; i < 16; ++i)
+        if (id == kAutoCh0 + i) { minPlain = 0; maxPlain = 255; return true; }
 
     for (int s = 0; s < kGenSlots; ++s)
     {
@@ -120,6 +129,7 @@ inline double ParamDefault(ParamID id)
         case kMidiCcOffset:        return 0;
         case kMidiUseCc:           return 1;
         case kMidiUseNotes:        return 1;
+        case kAutoBase:            return 0;
         default: break;
     }
 

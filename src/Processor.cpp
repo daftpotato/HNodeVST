@@ -222,6 +222,17 @@ void Processor::SyncConfigFromParams()
     c.midiStartChannel = std::max(0, std::min(4095, (int)std::lround(P(Param::kMidiStartChannel))));
     c.midiCcOffset     = std::max(0, std::min(127, (int)std::lround(P(Param::kMidiCcOffset))));
 
+    // ---- DAW automation -> DMX channels ----
+    {
+        int base = std::max(0, std::min(kMaxChannels - 16, (int)std::lround(P(Param::kAutoBase))));
+        for (int i = 0; i < 16; ++i)
+        {
+            int ch = base + i;
+            if (ch >= kMaxChannels) break;
+            uint8_t v = (uint8_t)std::lround(P(Param::kAutoCh0 + i));
+            engine->dmx.setChannel(ch / kChannelsPerUni, ch % kChannelsPerUni, v);
+        }
+    }
     // ---- generators ----
     c.generators.clear();
     for (int s = 0; s < Param::kGenSlots; ++s)

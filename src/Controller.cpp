@@ -136,6 +136,16 @@ tresult PLUGIN_API Controller::initialize(FUnknown* context)
     AddNormalized(Param::kMidiUseNotes, "MIDI Use Notes", "",
                    1.0, ParameterInfo::kCanAutomate);
 
+    AddNormalized(Param::kAutoBase, "Auto Base Ch", "",
+                   0.0, ParameterInfo::kCanAutomate, nullptr, 0, 0.0, 4095.0);
+    for (int i = 0; i < 16; ++i)
+    {
+        char name[32];
+        sprintf_s(name, "Auto Ch %d", i);
+        AddNormalized((ParamID)(Param::kAutoCh0 + i), name, "",
+                       0.0, ParameterInfo::kCanAutomate, nullptr, 0, 0.0, 255.0);
+    }
+
     // ---- generators ----
     for (int s = 0; s < Param::kGenSlots; ++s)
     {
