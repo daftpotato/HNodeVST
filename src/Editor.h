@@ -71,11 +71,11 @@ private:
     HWND cmbFps = nullptr;
 
     HWND chkArtNet = nullptr, chkArtNetOut = nullptr;
-    HWND edArtNetPort = nullptr, edArtNetOutPort = nullptr;
+    HWND edArtNetPort = nullptr, edArtNetOutPort = nullptr, edArtNetAddr = nullptr, edArtNetSendHost = nullptr;
     HWND chkOsc = nullptr, chkOscOut = nullptr;
-    HWND edOscPort = nullptr, edOscOutPort = nullptr;
+    HWND edOscPort = nullptr, edOscOutPort = nullptr, edOscSendHost = nullptr;
     HWND chkSpout = nullptr;
-    HWND edSpoutName = nullptr;
+    HWND edSpoutName = nullptr, edMaskedChannels = nullptr;
 
     HWND chkMidi = nullptr, chkMidiCc = nullptr, chkMidiNotes = nullptr;
     HWND edMidiStart = nullptr, edMidiCcOffset = nullptr;

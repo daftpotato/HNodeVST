@@ -16,7 +16,7 @@ namespace HNodeVST
 {
 
 static const int kMinW = 1024;
-static const int kMinH = 768;
+static const int kMinH = 900;
 static const int kPanelX = 672;
 static const int kPanelW = 336;
 
@@ -26,9 +26,9 @@ enum
     idFirst = 1000,
     idCmbSerializer, idCmbOutputConfig, idChkGamma, idChkRgb,
     idChkAutoMask, idChkInvertMask, idCmbUniverses, idCmbFps,
-    idChkArtNet, idEdArtNetPort, idChkArtNetOut, idEdArtNetOutPort,
-    idChkOsc, idEdOscPort, idChkOscOut, idEdOscOutPort,
-    idChkSpout, idEdSpoutName,
+    idChkArtNet, idEdArtNetPort, idChkArtNetOut, idEdArtNetOutPort, idEdArtNetAddr, idEdArtNetSendHost,
+    idChkOsc, idEdOscPort, idChkOscOut, idEdOscOutPort, idEdOscSendHost,
+    idChkSpout, idEdSpoutName, idEdMaskedChannels,
     idChkMidi, idChkMidiCc, idChkMidiNotes, idEdMidiStart, idEdMidiCcOffset,
     idGenBase
 };
@@ -270,6 +270,14 @@ void PlugView::BuildControls()
     SendMessageA(edArtNetOutPort, WM_SETFONT, (WPARAM)fontSmall, TRUE);
     SetWindowLongPtr(edArtNetPort, GWLP_ID, (LONG_PTR)idEdArtNetPort);
     SetWindowLongPtr(edArtNetOutPort, GWLP_ID, (LONG_PTR)idEdArtNetOutPort);
+    MkLabel(hwnd, "Bind Address (in)", x, y, halfW, 16, fontSmall);
+    MkLabel(hwnd, "Send Host (out)", x + halfW + 10, y, halfW, 16, fontSmall); y += 18;
+    edArtNetAddr = MkTextEdit(hwnd, "0.0.0.0", x, y, halfW, 22);
+    edArtNetSendHost = MkTextEdit(hwnd, "127.0.0.1", x + halfW + 10, y, halfW, 22);
+    SendMessageA(edArtNetAddr, WM_SETFONT, (WPARAM)fontSmall, TRUE);
+    SendMessageA(edArtNetSendHost, WM_SETFONT, (WPARAM)fontSmall, TRUE);
+    SetWindowLongPtr(edArtNetAddr, GWLP_ID, (LONG_PTR)idEdArtNetAddr);
+    SetWindowLongPtr(edArtNetSendHost, GWLP_ID, (LONG_PTR)idEdArtNetSendHost);
     y += 28;
 
     chkOsc = MkCheck(hwnd, "OSC In", x, y, halfW, 18);
@@ -285,7 +293,11 @@ void PlugView::BuildControls()
     SendMessageA(edOscOutPort, WM_SETFONT, (WPARAM)fontSmall, TRUE);
     SetWindowLongPtr(edOscPort, GWLP_ID, (LONG_PTR)idEdOscPort);
     SetWindowLongPtr(edOscOutPort, GWLP_ID, (LONG_PTR)idEdOscOutPort);
-    y += 30;
+    MkLabel(hwnd, "OSC Send Host", x, y, fullW, 16, fontSmall); y += 18;
+    edOscSendHost = MkTextEdit(hwnd, "127.0.0.1", x, y, fullW, 22);
+    SendMessageA(edOscSendHost, WM_SETFONT, (WPARAM)fontSmall, TRUE);
+    SetWindowLongPtr(edOscSendHost, GWLP_ID, (LONG_PTR)idEdOscSendHost);
+    y += 28;
 
     // ---- MIDI ----
     MkLabel(hwnd, "MIDI -> DMX", x, y, fullW, 18, fontSmall); y += 20;
@@ -356,6 +368,17 @@ void PlugView::BuildControls()
         SetWindowLongPtr(gen[s].edCount, GWLP_ID, (LONG_PTR)GenId(s, 3));
         y += 30;
     }
+
+    // ---- masked channels (fixture DMX address ranges) ----
+    MkLabel(hwnd, "MASKED CHANNELS (fixture addresses, one range per line: start-end)",
+            x, y, fullW, 18, fontSmall); y += 20;
+    edMaskedChannels = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+                                      WS_CHILD | WS_VISIBLE | ES_MULTILINE |
+                                      ES_AUTOVSCROLL | WS_VSCROLL,
+                                      x, y, fullW, 90, hwnd, nullptr, nullptr, nullptr);
+    SendMessageA(edMaskedChannels, WM_SETFONT, (WPARAM)fontSmall, TRUE);
+    SetWindowLongPtr(edMaskedChannels, GWLP_ID, (LONG_PTR)idEdMaskedChannels);
+    y += 96;
 }
 
 // ---------------------------------------------------------------------------
@@ -397,6 +420,9 @@ void PlugView::SyncControlsFromEngine()
     SetWindowTextA(edArtNetOutPort, std::to_string(c.artNetSendPort).c_str());
     SetWindowTextA(edOscPort, std::to_string(c.oscPort).c_str());
     SetWindowTextA(edOscOutPort, std::to_string(c.oscSendPort).c_str());
+    SetWindowTextA(edArtNetAddr, c.artNetAddress.c_str());
+    SetWindowTextA(edArtNetSendHost, c.artNetSendHost.c_str());
+    SetWindowTextA(edOscSendHost, c.oscSendHost.c_str());
     SetWindowTextA(edMidiStart, std::to_string(c.midiStartChannel).c_str());
     SetWindowTextA(edMidiCcOffset, std::to_string(c.midiCcOffset).c_str());
 
@@ -424,6 +450,16 @@ void PlugView::SyncControlsFromEngine()
             SetWindowTextA(gen[s].edStart, "0");
             SetWindowTextA(gen[s].edCount, "13");
         }
+    }
+
+    // masked channels -> text
+    {
+        std::string txt;
+        for (auto& r : c.maskedChannels)
+        {
+            txt += std::to_string(r.start) + "-" + std::to_string(r.end) + "\r\n";
+        }
+        SetWindowTextA(edMaskedChannels, txt.c_str());
     }
 }
 
@@ -473,6 +509,48 @@ void PlugView::PushSettingsToEngine()
     c.oscSendPort    = ReadIntEdit(edOscOutPort, 12000);
     c.midiStartChannel = ReadIntEdit(edMidiStart, 0);
     c.midiCcOffset     = ReadIntEdit(edMidiCcOffset, 0);
+
+    // host addresses
+    {
+        char buf[256];
+        GetWindowTextA(edArtNetAddr, buf, 255); if (buf[0]) c.artNetAddress = buf;
+        GetWindowTextA(edArtNetSendHost, buf, 255); if (buf[0]) c.artNetSendHost = buf;
+        GetWindowTextA(edOscSendHost, buf, 255); if (buf[0]) c.oscSendHost = buf;
+        GetWindowTextA(edSpoutName, buf, 255); if (buf[0]) c.spoutOutputName = buf;
+    }
+
+    // masked channels (fixture addresses)
+    {
+        char buf[4096];
+        GetWindowTextA(edMaskedChannels, buf, 4095);
+        c.maskedChannels.clear();
+        std::string s(buf);
+        // split lines
+        size_t pos = 0;
+        while (pos < s.size())
+        {
+            size_t nl = s.find_first_of("\r\n", pos);
+            std::string line = (nl == std::string::npos) ? s.substr(pos) : s.substr(pos, nl - pos);
+            pos = (nl == std::string::npos) ? s.size() : nl + 1;
+            // trim
+            while (!line.empty() && (line.front()==' '||line.front()=='\t')) line.erase(line.begin());
+            while (!line.empty() && (line.back()==' '||line.back()=='\t')) line.pop_back();
+            if (line.empty()) continue;
+            // parse "start" or "start-end"
+            size_t dash = line.find('-');
+            try
+            {
+                int st = std::stoi(line.substr(0, dash));
+                int en = (dash == std::string::npos) ? st : std::stoi(line.substr(dash + 1));
+                if (st < 0) st = 0;
+                if (en < st) en = st;
+                if (st >= kMaxChannels) continue;
+                if (en >= kMaxChannels) en = kMaxChannels - 1;
+                c.maskedChannels.push_back({ st, en });
+            }
+            catch (...) {}
+        }
+    }
 
     c.generators.clear();
     for (int s = 0; s < Param::kGenSlots; ++s)
@@ -703,7 +781,9 @@ LRESULT CALLBACK PlugView::WndProc(HWND h, UINT msg, WPARAM wParam, LPARAM lPara
                 if (id == idEdSpoutName || id == idEdArtNetPort ||
                     id == idEdArtNetOutPort || id == idEdOscPort ||
                     id == idEdOscOutPort || id == idEdMidiStart ||
-                    id == idEdMidiCcOffset)
+                    id == idEdMidiCcOffset || id == idEdArtNetAddr ||
+                    id == idEdArtNetSendHost || id == idEdOscSendHost ||
+                    id == idEdMaskedChannels)
                 {
                     self->PushSettingsToEngine();
                 }
