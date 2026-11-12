@@ -1,4 +1,5 @@
 // HNodeVST - VST3 edit controller.
+#include <windows.h>
 #include "Controller.h"
 #include "Editor.h"
 
@@ -69,12 +70,17 @@ Controller::~Controller() {}
 
 tresult PLUGIN_API Controller::queryInterface(const TUID iid, void** obj)
 {
-    if (memcmp(iid, IEditController::iid, sizeof(TUID)) == 0 ||
-        memcmp(iid, IEditController2::iid, sizeof(TUID)) == 0)
+    if (memcmp(iid, IEditController::iid, sizeof(TUID)) == 0)
     {
-        *obj = this;
+        *obj = static_cast<IEditController*>(this);
         addRef();
-        return kResultTrue;
+        return kResultOk;
+    }
+    if (memcmp(iid, IEditController2::iid, sizeof(TUID)) == 0)
+    {
+        *obj = static_cast<IEditController2*>(this);
+        addRef();
+        return kResultOk;
     }
     return EditController::queryInterface(iid, obj);
 }
@@ -203,7 +209,6 @@ IPlugView* PLUGIN_API Controller::createView(FIDString name)
 {
     if (name && strcmp(name, ViewType::kEditor) == 0)
     {
-        // PlugView is defined in Editor.cpp
         view = (PlugView*)CreatePlugView(nullptr);
         return view;
     }
